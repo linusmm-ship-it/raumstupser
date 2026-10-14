@@ -1,0 +1,51 @@
+name: Raumdaten aktualisieren und Seite veröffentlichen
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['data/**']
+  schedule:
+    - cron: '2-59/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: room-data-and-pages
+  cancel-in-progress: false
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/update-data.mjs
+      - name: Neue Daten speichern
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update public room availability data'
+            git push
+          fi
+      - name: Webseite zusammenstellen
+        run: |
+          mkdir _site
+          cp index.html app.mjs core.mjs style.css manifest.webmanifest icon-192.png icon-512.png apple-touch-icon.png _site/
+          cp -R data _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4

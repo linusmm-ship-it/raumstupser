@@ -14,7 +14,8 @@ function eventRow(booking,label){const row=el('div','','event-row');row.append(e
 }
 function render(){results.replaceChildren();const needle=normalize(query.value);if(needle.length<2){status.textContent='Mindestens 2 Zeichen eingeben. Die Suche umfasst beide Campusse.';return;}
  const available=new Map(registry.map(r=>[r.room,r]));for(const data of Object.values(datasets)){if(!data)continue;for(const id of [...(data.freeRooms||[]),...(data.bookings||[]).map(b=>b.room)])if(!available.has(id))available.set(id,{room:id});}
- const matches=[...available.values()].filter(r=>normalize(r.room).includes(needle)).sort((a,b)=>{const an=a.room.split('.').slice(2).join('.'),bn=b.room.split('.').slice(2).join('.');return Number(normalize(bn)===needle)-Number(normalize(an)===needle)||a.room.localeCompare(b.room,'de',{numeric:true});});
+ const fullNumber=query.value.trim().split(/[.\s]+/).length>=3;
+ const matches=[...available.values()].filter(r=>normalize(fullNumber?r.room:r.room.split('.').slice(2).join('.')).includes(needle)).sort((a,b)=>{const an=a.room.split('.').slice(2).join('.'),bn=b.room.split('.').slice(2).join('.');return Number(normalize(bn)===needle)-Number(normalize(an)===needle)||a.room.localeCompare(b.room,'de',{numeric:true});});
  status.textContent=matches.length?`${matches.length} ${matches.length===1?'Raum':'Räume'} in beiden Campussen${matches.length>20?' · erste 20 Treffer':''}. Belegung laut Uni-Plan.`:'Kein Raum gefunden. Versuche die vollständige Raumnummer, z. B. 2.09.0.14.';
  for(const r of matches.slice(0,20)){
   const parts=r.room.split('.'),campus=parts[0],data=datasets[campus],activity=roomActivity(data,r.room),name=parts.slice(2).join('.');

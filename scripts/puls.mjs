@@ -1,19 +1,22 @@
 import {readFile} from 'node:fs/promises';
 const base='https://puls.uni-potsdam.de/qisserver/rds';
 const weekdays=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
-function plain(text){return text.replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/\s+/g,' ').trim();}
+function decode(text){const named={nbsp:' ',amp:'&',quot:'"',apos:"'",lt:'<',gt:'>',auml:'ä',ouml:'ö',uuml:'ü',Auml:'Ä',Ouml:'Ö',Uuml:'Ü',szlig:'ß',ndash:'–',mdash:'—'};return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,(all,key)=>key[0]==='#'?String.fromCodePoint(parseInt(key.slice(key[1]?.toLowerCase()==='x'?2:1),key[1]?.toLowerCase()==='x'?16:10)):named[key]??all);}
+function plain(text){return decode(text.replace(/<[^>]*>/g,' ')).replace(/\s+/g,' ').trim();}
 export function isoWeek(day){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));const y=d.getUTCFullYear();return `${Math.ceil(((d-new Date(Date.UTC(y,0,1)))/86400000+1)/7)}_${y}`;}
 export function parseWeek(html,room){
  const begin=html.indexOf('class="plan_rahmen"');if(begin<0||!html.includes(room.split('.').slice(0,2).join('.')+' - '))throw Error('PULS room plan missing');
  const grid=html.slice(begin);const headers=new Map();
  for(const [,content] of grid.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)){const text=plain(content);const m=text.match(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)\s+(\d{1,2})\.(\d{1,2})\.(\d{4})/);if(m)headers.set(m[1],`${m[4]}-${m[3].padStart(2,'0')}-${m[2].padStart(2,'0')}`);}
  if(headers.size<5)throw Error('Dated PULS week headers missing');
+ const events=[...grid.matchAll(/<a\b([^>]*publishid=(\d+)[^>]*class="ver"[^>]*)>([\s\S]*?)<\/a>/g)].map(m=>({index:m.index,title:plain(m[1].match(/\btitle="([^"]*)"/)?.[1]||m[3]),url:`https://puls.uni-potsdam.de/qisserver/rds?state=verpublish&status=init&vmfile=no&publishid=${m[2]}&moduleCall=webInfo&publishConfFile=webInfo&publishSubDir=veranstaltung`}));
  const bookings=[];let timed=0;
- for(const [,content] of grid.matchAll(/<td\b[^>]*class="notiz"[^>]*>([\s\S]*?)<\/td>/gi)){
-  const text=plain(content);if(!weekdays.some(d=>text.startsWith(d+',')))continue;
+ for(const match of grid.matchAll(/<td\b[^>]*class="notiz"[^>]*>([\s\S]*?)<\/td>/gi)){
+  const text=plain(match[1]);if(!weekdays.some(d=>text.startsWith(d+',')))continue;
   const m=text.match(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag),\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);if(!m||!headers.has(m[1]))throw Error('Unrecognized PULS booking time');
   const date=headers.get(m[1]);const start=m[2].padStart(5,'0'),end=m[3].padStart(5,'0');if(end<=start)throw Error('Unsupported PULS overnight booking');
-  bookings.push({room,start:`${date} ${start}:00`,end:`${date} ${end}:00`});timed++;
+  const event=events.filter(e=>e.index<match.index).at(-1);if(!event)throw Error("PULS event title missing");
+  bookings.push({room,title:event.title,url:event.url,start:`${date} ${start}:00`,end:`${date} ${end}:00`});timed++;
  }
  const links=[...grid.matchAll(/<a\b[^>]*publishid=\d+[^>]*class="ver"[^>]*>/g)].length;
  if(links!==timed)throw Error(`PULS event count mismatch (${links} links / ${timed} times)`);

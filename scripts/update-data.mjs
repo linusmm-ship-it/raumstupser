@@ -11,7 +11,7 @@ for(const day of days)for(const campus of ['2','3']){
   const query=new URLSearchParams({start:berlinDate(day).toISOString(),end:berlinDate(nextDay(day)).toISOString()});
   const [bookings,free]=await Promise.all([get(`/bookings/${campus}?day=${day}`),get(`/rooms/${campus}?${query}`)]);
   if(!Array.isArray(bookings)||!Array.isArray(free.rooms)||(!bookings.length&&!free.rooms.length))throw Error('Empty or invalid room inventory');
-  const safe=bookings.map(({room,start,end})=>({room,start,end}));
+  const safe=bookings.map(({room,start,end,title})=>({room,start,end,title:typeof title==='string'?title:undefined}));
   for(const b of safe)if(typeof b.room!=='string'||!b.room.startsWith(campus+'.')||typeof b.start!=='string'||typeof b.end!=='string')throw Error('Invalid booking');
   if(!free.rooms.every(r=>typeof r==='string'&&r.startsWith(campus+'.')))throw Error('Invalid room catalogue');
   snapshots.push({day,campus,bookings:safe,freeRooms:free.rooms,source:'mobileup',fetchedAt:new Date().toISOString()});
@@ -29,4 +29,4 @@ for(let i=0;i<snapshots.length;i++)if(snapshots[i].unavailable){
 // Failed sources never turn into a falsely valid empty inventory; retain a dated last-good snapshot when available.
 for(const snapshot of snapshots){const target=new URL(`../data/${snapshot.day}-${snapshot.campus}.json`,import.meta.url);const tmp=new URL(target+'.tmp');await writeFile(tmp,JSON.stringify(snapshot));await rename(tmp,target);}
 for(const name of await readdir(new URL('../data/',import.meta.url)))if(/^\d{4}-\d{2}-\d{2}-[23]\.json$/.test(name)&&!days.some(d=>name.startsWith(d)))await unlink(new URL('../data/'+name,import.meta.url));
-console.log(`Updated ${snapshots.length} campus-day snapshots. No names, event titles or credentials are published.`);
+console.log(`Updated ${snapshots.length} campus-day snapshots. Only public room times and event titles are published; no lecturer names or credentials.`);

@@ -1,7 +1,12 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1f6661"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Raumstupser"><meta name="description" content="Freie Lernräume in Griebnitzsee und Golm. Aktuelle Zeitfenster auf einen Stups."><title>Raumstupser</title><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css"></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1f6661"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Raumstupser"><meta name="description" content="Freie Lernräume in Griebnitzsee und Golm. Aktuelle Zeitfenster auf einen Stups."><title>Raumstupser</title><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css?v=4"></head><body>
 <main>
 <header><img src="icon-192.png" width="64" height="64" alt=""><div><span class="eyebrow">DEIN PLATZ ZUM LERNEN</span><h1>Raumstupser</h1></div></header>
 <p class="intro">Ein Stups. Ein freier Raum.</p>
+<section class="controls lookup" aria-label="Was läuft im Raum?">
+<h2>Was läuft im Raum?</h2><p class="lookup-hint">Raum suchen · Griebnitzsee &amp; Golm gleichzeitig</p>
+<label><span class="sr-only">Raum in beiden Campussen suchen</span><input id="lookup-query" type="search" placeholder="z. B. S26, 0.14 oder 2.09.0.14" autocomplete="off"></label>
+<p id="lookup-status" role="status" aria-live="polite">Zeigt die aktuelle Belegung und die nächsten Termine heute.</p><div id="lookup-results"></div>
+</section>
 <section class="controls" aria-label="Raumsuche">
 <div class="campus" role="group" aria-label="Campus"><button type="button" data-campus="3" aria-pressed="true">Griebnitzsee</button><button type="button" data-campus="2" aria-pressed="false">Golm</button></div>
 <div class="two"><label>Datum<input id="day" type="date"></label><label>Mindestens<select id="minimum"><option value="30">30 Minuten</option><option value="60" selected>60 Minuten</option><option value="90">90 Minuten</option><option value="120">2 Stunden</option></select></label></div>
@@ -12,4 +17,4 @@
 </section>
 <section class="results-section" aria-label="Freie Räume"><div class="result-heading"><h2>Deine freien Räume</h2><span id="count"></span></div><p id="status" role="status" aria-live="polite">Raumdaten werden geladen …</p><div id="results"></div></section>
 <footer><p>Laut Uni-Raumplan unbelegt.<br>Zugang vor Ort prüfen.</p><p class="source">Quelle: <a href="https://mobileup.uni-potsdam.de/free-rooms">Mobile.UP</a> · Zeiten in Berlin<br>Neuester Stand beim Öffnen und bei der Rückkehr.<br>Uni-Daten per GitHub Actions etwa alle 5 Min.; Verzögerungen möglich.</p><details><summary>Wie kommt die App aufs iPhone?</summary><p>In Safari öffnen → Teilen → „Zum Home-Bildschirm“. Dann startet Raumstupser über sein eigenes Symbol.</p></details></footer>
-</main><script type="module" src="app.mjs"></script></body></html>
+</main><script type="module" src="app.mjs?v=4"></script><script type="module" src="room-lookup.mjs?v=1"></script></body></html>

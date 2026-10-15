@@ -1,4 +1,4 @@
-import {analyze,dayKey,nextDay,clock} from './core.mjs';
+import {analyze,dayKey,nextDay,clock} from './core.mjs?v=4';
 
 const $=id=>document.getElementById(id);
 function stored(key,fallback){try{return localStorage.getItem(key)??fallback;}catch{return fallback;}}

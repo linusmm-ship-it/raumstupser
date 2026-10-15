@@ -35,3 +35,14 @@ export function analyze(data,{day,campus,now=true,minimum=60},current=new Date()
  for(const r of data.freeRooms){if(typeof r!=='string'||!r.startsWith(`${campus}.`))throw Error('Ungültiger Raumkatalog.');if(!busy.has(r))busy.set(r,[]);}
  return [...busy].map(([id,slots])=>{const parts=id.split('.');return {id,house:`Haus ${Number(parts[1])}`,name:parts.slice(2).join('.'),slots:gaps(slots,start,end,minimum)};}).filter(r=>r.slots.length).sort((a,b)=>a.slots[0].start-b.slots[0].start||a.id.localeCompare(b.id,'de',{numeric:true}));
 }
+
+export function roomActivity(dataset,room,current=new Date()) {
+ if(!dataset||dataset.unavailable||dataset.day!==dayKey(current)||(!dataset.bookings?.length&&!dataset.freeRooms?.length))return {state:'unknown',current:[],next:[]};
+ const bookings=dataset.bookings.filter(b=>b.room===room).map(b=>({...b,start:berlinDate(b.start.slice(0,10),b.start.slice(11)),end:berlinDate(b.end.slice(0,10),b.end.slice(11))}));
+ const known=bookings.length>0||dataset.freeRooms.includes(room);
+ if(!known)return {state:'unknown',current:[],next:[]};
+ if(bookings.some(b=>!Number.isFinite(+b.start)||!Number.isFinite(+b.end)||b.end<=b.start))return {state:'unknown',current:[],next:[]};
+ const unique=[...new Map(bookings.map(b=>[`${+b.start}/${+b.end}/${b.title||''}`,b])).values()].sort((a,b)=>a.start-b.start);
+ const running=unique.filter(b=>b.start<=current&&current<b.end);
+ return {state:running.length?'busy':'free',current:running,next:unique.filter(b=>b.start>current).slice(0,2)};
+}

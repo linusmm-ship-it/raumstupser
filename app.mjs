@@ -1,10 +1,11 @@
-import {analyze,dayKey,nextDay,clock} from './core.mjs?v=4';
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=5';
+import {analyze,dayKey,nextDay,clock} from './core.mjs?v=5';
 
 const $=id=>document.getElementById(id);
 function stored(key,fallback){try{return localStorage.getItem(key)??fallback;}catch{return fallback;}}
 function save(key,value){try{localStorage.setItem(key,String(value));}catch{}}
 let campus=stored('room-campus','3');if(!['2','3'].includes(campus))campus='3';
-let now=true,raw=null,requestId=0,controller=null,lastStarted=0;
+let now=true,raw=null,requestId=0,lastStarted=0;
 $('day').value=dayKey();$('day').min=dayKey();let limit=dayKey();for(let i=0;i<6;i++)limit=nextDay(limit);$('day').max=limit;
 function restoreCampusFilter(){ $('seminars').checked=stored(`room-seminars-${campus}`,campus==='3'?'true':'false')==='true'; }
 restoreCampusFilter();
@@ -20,28 +21,20 @@ function render(){
  for(const r of rooms){const card=element('article','','room');const heading=element('div','','room-heading');const title=element('div','');title.append(element('h3',r.name),element('p',`${r.house} · ${r.id}`));heading.append(title,element('span','unbelegt','available'));const slots=element('div','','slots');for(const s of r.slots){const slot=element('div',`${clock(s.start)}–${clock(s.end)}`,'slot');slot.append(element('small',`${Math.round((s.end-s.start)/60000)} Min.`));slots.append(slot);}card.append(heading,slots);$('results').append(card);}
 }
 async function load(){
- const id=++requestId;controller?.abort();controller=new AbortController();const activeController=controller;const signal=activeController.signal;
+ const id=++requestId;
  lastStarted=Date.now();raw=null;render();$('refresh').disabled=true;$('status').className='';$('status').textContent='Neuester verfügbarer Datenstand wird geladen …';
- const deadline=setTimeout(()=>activeController.abort(),25000);
  try{
-  const url=new URL(`data/${$('day').value}-${campus}.json`,location.href);url.searchParams.set('fresh',String(Date.now()));
-  const response=await fetch(url,{cache:'no-store',signal,credentials:'omit'});if(!response.ok)throw Error('Die Uni-Raumdaten sind gerade nicht verfügbar. Bitte erneut versuchen.');
-  const result=await response.json();if(id!==requestId)return;
-  if(result.unavailable||(!result.bookings?.length&&!result.freeRooms?.length))throw Error(result.message||'Die Universität liefert zurzeit keine verwertbaren Raumdaten. Das bedeutet nicht, dass alle Räume belegt sind. Bitte später erneut versuchen.');
-  if(!result.fetchedAt||!Number.isFinite(Date.parse(result.fetchedAt)))throw Error('Der Datenstand ist unbekannt.');
-  raw=result;render();$('status').textContent=`${campus==='3'?'Griebnitzsee':'Golm'} · ${new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(`${$('day').value}T12:00:00Z`))} · Datenstand ${clock(new Date(result.fetchedAt))} Uhr`;
-  if(result.source==='puls')$('status').textContent+=' · PULS-Ersatzquelle';
-  if(result.unavailableRooms)$('status').textContent+=` · ${result.unavailableRooms} Räume nicht prüfbar`;
-  if(result.upstreamUnavailable){$('status').className='error';$('status').textContent+=' · Uni-Abruf gestört – letzter gültiger Stand';}
-  const age=Math.max(0,Math.round((Date.now()-Date.parse(result.fetchedAt))/60000));
-  if(age>10){$('status').className='error';$('status').textContent+=` · ${age} Min. alt – GitHub-Aktualisierung verzögert.`;}
+  const result=await loadSnapshot($('day').value,campus);if(id!==requestId)return;
+  raw=result;render();$('status').className=result.delivery==='live'?'':'warning';
+  $('status').textContent=`${campus==='3'?'Griebnitzsee':'Golm'} · ${snapshotLabel(result)}`;
  }catch(error){if(id!==requestId)return;raw=null;render();$('status').className='error';$('status').textContent=error.name==='AbortError'?'Die Abfrage hat zu lange gedauert. Bitte erneut anstupsen.':error.message;}
- finally{clearTimeout(deadline);if(id===requestId)$('refresh').disabled=false;}
+ finally{if(id===requestId)$('refresh').disabled=false;}
 }
 document.querySelectorAll('[data-campus]').forEach(b=>b.addEventListener('click',()=>{campus=b.dataset.campus;save('room-campus',campus);restoreCampusFilter();syncControls();load();}));
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{now=b.dataset.mode==='now';syncControls();if(raw)render();else load();}));
 $('refresh').addEventListener('click',load);$('day').addEventListener('change',load);$('minimum').addEventListener('change',()=>{if(raw)render();});$('search').addEventListener('input',render);
 $('seminars').addEventListener('change',()=>{save(`room-seminars-${campus}`,$('seminars').checked);syncControls();render();});$('halls').addEventListener('change',render);
 function resume(){if(document.visibilityState==='visible'&&Date.now()-lastStarted>1500){const today=dayKey();if($('day').value<today)$('day').value=today;$('day').min=today;let limit=today;for(let i=0;i<6;i++)limit=nextDay(limit);$('day').max=limit;load();}}
-window.addEventListener('pageshow',event=>{if(event.persisted)resume();});document.addEventListener('visibilitychange',resume);
+window.addEventListener('pageshow',event=>{if(event.persisted)resume();});document.addEventListener('visibilitychange',resume);window.addEventListener('online',resume);
+setInterval(()=>{if(document.visibilityState==='visible'&&Date.now()-lastStarted>=60000)resume();},30000);
 syncControls();load();

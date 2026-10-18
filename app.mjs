@@ -1,5 +1,6 @@
-import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=6';
-import {analyze,dayKey,nextDay,clock} from './core.mjs?v=6';
+document.getElementById('room-lookup').open=window.matchMedia('(min-width: 960px)').matches;
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=7';
+import {analyze,dayKey,nextDay,clock} from './core.mjs?v=7';
 
 const $=id=>document.getElementById(id);
 function stored(key,fallback){try{return localStorage.getItem(key)??fallback;}catch{return fallback;}}
@@ -9,7 +10,7 @@ let mode='now',raw=null,requestId=0,lastStarted=0;
 $('day').value=dayKey();$('day').min=dayKey();let limit=dayKey();for(let i=0;i<6;i++)limit=nextDay(limit);$('day').max=limit;
 function restoreCampusFilter(){ $('seminars').checked=stored(`room-seminars-${campus}`,campus==='3'?'true':'false')==='true'; }
 restoreCampusFilter();
-function syncControls(){document.querySelectorAll('[data-campus]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.campus===campus)));document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('halls').disabled=$('seminars').checked;$('time-window').hidden=mode!=='custom';$('minimum').disabled=mode==='custom';}
+function syncControls(){document.querySelectorAll('[data-campus]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.campus===campus)));document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));$('halls').disabled=$('seminars').checked;$('time-window').hidden=mode!=='custom';$('minimum').disabled=mode==='custom';$('minimum').closest('label').hidden=mode==='custom';$('day').closest('.two').classList.toggle('date-only',mode==='custom');}
 function element(tag,text,className){const e=document.createElement(tag);e.textContent=text;if(className)e.className=className;return e;}
 function render(){
  $('results').replaceChildren();$('count').textContent='';if(!raw)return;

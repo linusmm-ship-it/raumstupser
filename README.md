@@ -19,3 +19,5 @@ Wenn die Mobile.UP-API ausfällt oder einen leeren Raumkatalog liefert, liest de
 Die Suche **Was läuft im Raum?** durchsucht beide Campusse unabhängig von den Filtern der Freiraumsuche. Sie zeigt laufende Veranstaltungen mit Uhrzeiten sowie bis zu zwei folgende Termine am heutigen Tag. Überlappende Termine bleiben sichtbar. Nicht prüfbare Räume werden als unbekannt gekennzeichnet. Die Daten werden nur laut veröffentlichtem Plan ausgewertet, nicht vor Ort erkannt.
 
 Mit **Wunschzeit** lassen sich Von/Bis-Uhrzeiten zum ausgewählten Datum angeben. Ergebnisse sind nur Räume, die den gesamten Zeitraum durchgehend unbelegt sind; die Mindestdauer gilt in diesem Modus nicht. Die Raumsuche nach laufenden Veranstaltungen bleibt auf heute bezogen.
+
+Die Oberfläche passt sich iPhone und Mac an: große Touch-Flächen und einklappbare Veranstaltungssuche auf kleinen Bildschirmen, getrennte Suchspalte ab 960 Pixeln. Bei Wunschzeit entfällt das Feld Mindestdauer, da der gesamte Zeitraum frei sein muss.

@@ -21,10 +21,14 @@ export function gaps(busy,start,end,minimum) {
  if(+end-cursor>=minimum*60000)result.push({start:new Date(cursor),end:new Date(+end)});
  return result;
 }
-export function analyze(data,{day,campus,now=true,minimum=60},current=new Date()) {
+export function analyze(data,{day,campus,now=true,minimum=60,from=null,to=null},current=new Date()) {
  if(!Array.isArray(data.bookings)||!Array.isArray(data.freeRooms)||data.day!==day||data.campus!==String(campus))throw Error('Unerwartete Daten der Universität.');
- const start=now&&day===dayKey(current)?new Date(Math.max(+berlinDate(day,'08:00:00'),Math.ceil(+current/60000)*60000)):berlinDate(day,'08:00:00');
- const end=berlinDate(day,'20:00:00');if(start>=end)return [];
+ const custom=from!==null||to!==null;
+ if(custom&&(!/^([01]\d|2[0-3]):[0-5]\d$/.test(from)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(to)||from>=to))throw Error('Bitte eine gültige Von- und Bis-Uhrzeit wählen. Bis muss nach Von liegen.');
+ const start=custom?berlinDate(day,from+':00'):now&&day===dayKey(current)?new Date(Math.max(+berlinDate(day,'08:00:00'),Math.ceil(+current/60000)*60000)):berlinDate(day,'08:00:00');
+ const end=berlinDate(day,custom?to+':00':'20:00:00');if(start>=end)return [];
+ if(custom)minimum=(end-start)/60000;
+
  const busy=new Map();
  for(const b of data.bookings) {
   if(typeof b.room!=='string'||!b.room.startsWith(`${campus}.`)||!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(b.start)||!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(b.end))throw Error('Ungültige Raumdaten.');

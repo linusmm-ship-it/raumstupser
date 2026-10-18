@@ -1,4 +1,4 @@
-import {dayKey,clock,analyze} from './core.mjs?v=5';
+import {dayKey,clock,analyze} from './core.mjs?v=6';
 export const LIVE_URL='https://raumstupser-daten.spicy-finch-1813.chatgpt.site/api/day';
 export function createLoader({fetcher=(...args)=>fetch(...args),storage=()=>globalThis.localStorage,now=()=>Date.now(),base=()=>location.href}={}){
  const pending=new Map();

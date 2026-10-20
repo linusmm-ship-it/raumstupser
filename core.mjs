@@ -50,3 +50,8 @@ export function roomActivity(dataset,room,current=new Date()) {
  const running=unique.filter(b=>b.start<=current&&current<b.end);
  return {state:running.length?'busy':'free',current:running,next:unique.filter(b=>b.start>current).slice(0,2)};
 }
+
+export function matchesCampusHouse(room,campus){
+ const parts=room.id.split('.');
+ return parts[0]===String(campus)&&Number(parts[1])===(String(campus)==='2'?70:6)&&(String(campus)==='2'||/^[SH]/i.test(room.name));
+}

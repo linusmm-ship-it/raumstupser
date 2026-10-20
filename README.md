@@ -21,3 +21,5 @@ Die Suche **Was läuft im Raum?** durchsucht beide Campusse unabhängig von den 
 Mit **Wunschzeit** lassen sich Von/Bis-Uhrzeiten zum ausgewählten Datum angeben. Ergebnisse sind nur Räume, die den gesamten Zeitraum durchgehend unbelegt sind; die Mindestdauer gilt in diesem Modus nicht. Die Raumsuche nach laufenden Veranstaltungen bleibt auf heute bezogen.
 
 Die Oberfläche passt sich iPhone und Mac an: große Touch-Flächen und einklappbare Veranstaltungssuche auf kleinen Bildschirmen, getrennte Suchspalte ab 960 Pixeln. Bei Wunschzeit entfällt das Feld Mindestdauer, da der gesamte Zeitraum frei sein muss.
+
+Der Haus-Schnellfilter zeigt in Golm nur Räume aus 2.70 und in Griebnitzsee nur Seminar- und Hörsäle aus Haus 6. Während er aktiv ist, ersetzt er die Raumtyp-Checkboxen; beim Ausschalten gelten wieder die vorherigen Raumtyp-Filter. Die Einstellung wird je Campus gespeichert.

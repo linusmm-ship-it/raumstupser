@@ -1,5 +1,5 @@
-import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=7';
-import {dayKey,clock,roomActivity} from './core.mjs?v=7';
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=8';
+import {dayKey,clock,roomActivity} from './core.mjs?v=8';
 const query=document.getElementById('lookup-query'),status=document.getElementById('lookup-status'),results=document.getElementById('lookup-results');
 let registry=[],datasets={},loadedDay=null,loadedAt=0,pending=null,revision=0;
 function el(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}

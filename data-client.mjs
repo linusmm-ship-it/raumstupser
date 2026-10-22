@@ -1,4 +1,4 @@
-import {dayKey,clock,analyze} from './core.mjs?v=10';
+import {dayKey,clock,analyze} from './core.mjs?v=11';
 export const LIVE_URL='https://raumstupser-daten.spicy-finch-1813.chatgpt.site/api/day';
 export function createLoader({fetcher=(...args)=>fetch(...args),storage=()=>globalThis.localStorage,now=()=>Date.now(),base=()=>location.href}={}){
  const pending=new Map();
@@ -29,7 +29,7 @@ export const loadSnapshot=createLoader();
 export function snapshotLabel(data){
  const age=Math.max(0,Math.round((Date.now()-Date.parse(data.fetchedAt))/60000));
  const date=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit'}).format(new Date(data.fetchedAt));
- let text=data.delivery==='live'?'Live bei der Uni abgerufen':data.delivery==='cache'?'Gespeicherter Ersatzstand – Live-Abruf nicht erreichbar':'GitHub-Ersatzstand – Live-Abruf nicht erreichbar';
+ let text=data.delivery==='puls-index'?'Ergänzender PULS-Raumplan':data.delivery==='live'?'Live bei der Uni abgerufen':data.delivery==='cache'?'Gespeicherter Ersatzstand – Live-Abruf nicht erreichbar':'GitHub-Ersatzstand – Live-Abruf nicht erreichbar';
  text+=` · ${date}, ${clock(new Date(data.fetchedAt))} Uhr`;
  if(data.delivery!=='live')text+=` · ${age<60?`${age} Min.`:`${Math.floor(age/60)} Std. ${age%60} Min.`} alt`;
  if(data.source==='puls')text+=' · PULS';

@@ -17,9 +17,11 @@ for(const day of days)for(const campus of ['2','3']){
   snapshots.push({day,campus,bookings:safe,freeRooms:free.rooms,source:'mobileup',includesLecturers:true,fetchedAt:new Date().toISOString()});
  } catch(error){fallbackCampuses.add(campus);console.warn('Uni API unavailable:',day,campus,error.message);}
 }
+const teaching=await pulsSnapshots(days,['2','3']);
+await writeFile(new URL('../data/teaching.json',import.meta.url),JSON.stringify({snapshots:teaching}));
 if(fallbackCampuses.size){
  snapshots=snapshots.filter(s=>!fallbackCampuses.has(s.campus));
- snapshots.push(...await pulsSnapshots(days,[...fallbackCampuses]));
+ snapshots.push(...teaching.filter(s=>fallbackCampuses.has(s.campus)));
 }
 for(let i=0;i<snapshots.length;i++)if(snapshots[i].unavailable){
  try {const previous=JSON.parse(await readFile(new URL(`../data/${snapshots[i].day}-${snapshots[i].campus}.json`,import.meta.url),'utf8'));

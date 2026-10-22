@@ -1,6 +1,6 @@
 document.getElementById('room-lookup').open=true;
-import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=10';
-import {analyze,dayKey,nextDay,clock,matchesCampusHouse} from './core.mjs?v=10';
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=11';
+import {analyze,dayKey,nextDay,clock,matchesCampusHouse} from './core.mjs?v=11';
 
 const $=id=>document.getElementById(id);
 function stored(key,fallback){try{return localStorage.getItem(key)??fallback;}catch{return fallback;}}

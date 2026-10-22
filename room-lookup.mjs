@@ -1,5 +1,5 @@
-import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=10';
-import {dayKey,nextDay,clock,roomActivity,searchEvents} from './core.mjs?v=10';
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=11';
+import {dayKey,nextDay,clock,roomActivity,searchEvents,analyze} from './core.mjs?v=11';
 const query=document.getElementById('lookup-query'),status=document.getElementById('lookup-status'),results=document.getElementById('lookup-results');
 let lookupMode='all';
 const lookupDay=document.getElementById('lookup-day');
@@ -9,17 +9,18 @@ const range=document.getElementById('lookup-range');
 const requestedDay=()=>lookupMode==='room'?dayKey():lookupDay.value;
 const weekSearch=()=>lookupMode!=='room'&&range.value==='week';
 const requestKey=()=>weekSearch()?'week:'+dayKey():requestedDay();
-let registry=[],datasets={},loadedDay=null,loadedAt=0,pending=null,revision=0;
+let registry=[],datasets={},loadedDay=null,loadedAt=0,pending=null,revision=0,extraAvailable=false;
 function el(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
 const normalize=s=>s.toLocaleLowerCase('de').replace(/[^\p{L}\p{N}]/gu,'');
 async function json(path){const url=new URL(path,location.href);url.searchParams.set('fresh',Date.now());const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('Raumdaten konnten nicht geladen werden.');return await response.json();}finally{clearTimeout(timeout);}}
 async function load(){
  dateBounds();if(loadedDay===requestKey()&&Date.now()-loadedAt<(weekSearch()?180000:60000)&&Object.keys(datasets).length)return;if(pending)return pending;
- const key=requestKey(),days=[weekSearch()?dayKey():requestedDay()];if(weekSearch())for(let i=0;i<6;i++)days.push(nextDay(days.at(-1)));
+ const key=requestKey(),needsTeaching=lookupMode!=='room',days=[weekSearch()?dayKey():requestedDay()];if(weekSearch())for(let i=0;i<6;i++)days.push(nextDay(days.at(-1)));
  pending=(async()=>{
-  const rooms=await json('rooms.json');if(requestKey()===key){registry=rooms;datasets={};}const tasks=days.flatMap(day=>['2','3'].map(campus=>({day,campus}))),data=[];let cursor=0;
+  const rooms=await json('rooms.json');extraAvailable=false;if(requestKey()===key){registry=rooms;datasets={};}const tasks=days.flatMap(day=>['2','3'].map(campus=>({day,campus}))),data=[];let cursor=0;
   async function worker(){while(cursor<tasks.length){const {day,campus}=tasks[cursor++];let snapshot=null;try{snapshot=await loadSnapshot(day,campus);}catch{}data.push([days.length===1?campus:`${day}:${campus}`,snapshot]);if(requestKey()===key&&normalize(query.value).length>=2){datasets=Object.fromEntries(data);render();if(data.length<tasks.length)status.textContent+=' Weitere Tage werden geprüft …';}}}
-  await Promise.all([worker(),worker(),worker(),worker()]);registry=rooms;datasets=Object.fromEntries(data);loadedDay=key;loadedAt=Date.now();
+  async function teaching(){if(!needsTeaching)return;try{const index=await json('data/teaching.json');let count=0;for(const s of index.snapshots||[]){if(!days.includes(s.day)||!['2','3'].includes(s.campus)||s.unavailable)continue;try{analyze(s,{day:s.day,campus:s.campus,now:false});if(!Number.isFinite(Date.parse(s.fetchedAt)))continue;data.push([`puls:${s.day}:${s.campus}`,{...s,delivery:'puls-index'}]);count++;}catch{}}if(requestKey()===key)extraAvailable=count>0;}catch{}}
+  await Promise.all([worker(),worker(),worker(),worker(),teaching()]);registry=rooms;datasets=Object.fromEntries(data);loadedDay=key;loadedAt=Date.now();
  })().finally(()=>{pending=null;});return pending;
 }
 function eventRow(booking,label){const row=el('div','','event-row');row.append(el('span',`${label} · ${clock(booking.start)}–${clock(booking.end)} Uhr`,'event-time'),el('p',booking.title||'Belegt – Veranstaltungstitel nicht verfügbar','event-title'));if(Array.isArray(booking.lecturers)&&booking.lecturers.length)row.append(el('p',booking.lecturers.join(' · '),'event-lecturers'));
@@ -40,7 +41,8 @@ function renderPeople(){
   card.append(heading);if(b.approximate)card.append(el('p','Ähnliche Schreibweise – bitte Namen prüfen','match-note'));card.append(eventRow({...b,lecturers:[]},eventDate));if(!b.lecturers.length)card.append(el('p','Kein Dozierendenname im veröffentlichten Plan.','activity-note'));
   card.append(el('p',snapshotLabel(b.snapshot),'lookup-stamp'));results.append(card);
  }
- if(Object.values(datasets).some(d=>!d||d.unavailable))status.textContent+=' Ein Campus ist gerade nicht prüfbar; die Treffer sind unvollständig.';
+ if(Object.values(datasets).some(d=>!d||d.unavailable))status.textContent+=' Einige Tagesdaten sind gerade nicht prüfbar; die Treffer sind unvollständig.';
+ if(!extraAvailable)status.textContent+=' Die ergänzenden PULS-Termine sind gerade nicht verfügbar; weitere Lehrpersonen können fehlen.';
  if(Object.values(datasets).some(d=>d&&!d.includesLecturers))status.textContent+=' Ein Ersatzstand enthält keine Dozierendennamen; dort ist nur der Veranstaltungstitel durchsuchbar.';
 }
 function render(){results.replaceChildren();const needle=normalize(query.value);if(needle.length<2){status.textContent='Mindestens 2 Zeichen eingeben. Suche nach Raum oder nach Name / Veranstaltung in beiden Campussen.';return;}

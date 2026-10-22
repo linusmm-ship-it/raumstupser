@@ -55,3 +55,22 @@ export function matchesCampusHouse(room,campus){
  const parts=room.id.split('.');
  return parts[0]===String(campus)&&Number(parts[1])===(String(campus)==='2'?70:6)&&(String(campus)==='2'||/^[SH]/i.test(room.name));
 }
+
+export function searchEvents(datasets,query,day,current=new Date()){
+ const clean=s=>String(s).toLocaleLowerCase('de').normalize('NFD').replace(/\p{M}/gu,'').replace(/ß/g,'ss').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+ const words=clean(query).split(/\s+/).filter(Boolean);if(!words.length)return [];
+ const found=new Map();
+ for(const data of Object.values(datasets)){
+  if(!data||data.unavailable||data.day!==day)continue;
+  for(const b of data.bookings||[]){
+   const lecturers=Array.isArray(b.lecturers)?b.lecturers.filter(n=>typeof n==='string'):[];
+   const haystack=clean([b.title||'',...lecturers].join(' '));if(!words.every(w=>haystack.includes(w)))continue;
+   const start=berlinDate(b.start.slice(0,10),b.start.slice(11)),end=berlinDate(b.end.slice(0,10),b.end.slice(11));
+   if(!Number.isFinite(+start)||!Number.isFinite(+end)||end<=start)continue;
+   const state=start<=current&&current<end?'busy':start>current?'next':'ended';
+   const event={...b,lecturers,start,end,state,campus:String(data.campus),snapshot:data};
+   found.set([b.room,+start,+end,b.title,lecturers.join('|')].join('/'),event);
+  }
+ }
+ const rank={busy:0,next:1,ended:2};return [...found.values()].sort((a,b)=>rank[a.state]-rank[b.state]||(a.state==='ended'?b.start-a.start:a.start-b.start)||a.room.localeCompare(b.room,'de',{numeric:true}));
+}

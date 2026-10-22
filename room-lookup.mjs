@@ -1,19 +1,39 @@
-import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=8';
-import {dayKey,clock,roomActivity} from './core.mjs?v=8';
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=9';
+import {dayKey,nextDay,clock,roomActivity,searchEvents} from './core.mjs?v=9';
 const query=document.getElementById('lookup-query'),status=document.getElementById('lookup-status'),results=document.getElementById('lookup-results');
+let lookupMode='room';
+const lookupDay=document.getElementById('lookup-day');
+function dateBounds(){const today=dayKey();lookupDay.min=today;let limit=today;for(let i=0;i<6;i++)limit=nextDay(limit);lookupDay.max=limit;if(!lookupDay.value||lookupDay.value<today)lookupDay.value=today;}
+dateBounds();
+const requestedDay=()=>lookupMode==='person'?lookupDay.value:dayKey();
 let registry=[],datasets={},loadedDay=null,loadedAt=0,pending=null,revision=0;
 function el(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
 const normalize=s=>s.toLocaleLowerCase('de').replace(/[^\p{L}\p{N}]/gu,'');
 async function json(path){const url=new URL(path,location.href);url.searchParams.set('fresh',Date.now());const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);try{const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('Raumdaten konnten nicht geladen werden.');return await response.json();}finally{clearTimeout(timeout);}}
-async function load(){if(loadedDay===dayKey()&&Date.now()-loadedAt<60000&&Object.keys(datasets).length)return;if(pending)return pending;
- const requestDay=dayKey();
+async function load(){if(loadedDay===requestedDay()&&Date.now()-loadedAt<60000&&Object.keys(datasets).length)return;if(pending)return pending;
+ const requestDay=requestedDay();
  pending=(async()=>{const [rooms,...data]=await Promise.all([json('rooms.json'),...['2','3'].map(async c=>{try{return [c,await loadSnapshot(requestDay,c)];}catch{return [c,null];}})]);registry=rooms;datasets=Object.fromEntries(data);loadedDay=requestDay;loadedAt=Date.now();})().finally(()=>{pending=null;});return pending;
 }
-function eventRow(booking,label){const row=el('div','','event-row');row.append(el('span',`${label} · ${clock(booking.start)}–${clock(booking.end)} Uhr`,'event-time'),el('p',booking.title||'Belegt – Veranstaltungstitel nicht verfügbar','event-title'));
+function eventRow(booking,label){const row=el('div','','event-row');row.append(el('span',`${label} · ${clock(booking.start)}–${clock(booking.end)} Uhr`,'event-time'),el('p',booking.title||'Belegt – Veranstaltungstitel nicht verfügbar','event-title'));if(Array.isArray(booking.lecturers)&&booking.lecturers.length)row.append(el('p',booking.lecturers.join(' · '),'event-lecturers'));
  if(booking.url){try{const u=new URL(booking.url);if(u.protocol==='https:'&&u.hostname==='puls.uni-potsdam.de'){const a=el('a','Veranstaltung in PULS ↗');a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';row.append(a);}}catch{}}
  return row;
 }
-function render(){results.replaceChildren();const needle=normalize(query.value);if(needle.length<2){status.textContent='Mindestens 2 Zeichen eingeben. Die Suche umfasst beide Campusse.';return;}
+function renderPeople(){
+ const matches=searchEvents(datasets,query.value,requestedDay());
+ const date=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit'}).format(new Date(requestedDay()+'T12:00:00Z'));
+ status.textContent=matches.length?`${matches.length} ${matches.length===1?'Termin':'Termine'} am ${date} in beiden Campussen${matches.length>30?' · erste 30 Treffer':''}.`:'Kein passender Termin an diesem Tag. Versuche den Nachnamen, einen Teil des Veranstaltungstitels oder ein anderes Datum.';
+ for(const b of matches.slice(0,30)){
+  const parts=b.room.split('.'),card=el('article','','room activity'),heading=el('div','','room-heading'),title=el('div','');
+  title.append(el('h3',parts.slice(2).join('.')),el('p',`${b.campus==='2'?'Golm':'Griebnitzsee'} · Haus ${Number(parts[1])} · ${b.room}`));
+  heading.append(title,el('span',b.state==='busy'?'läuft gerade':b.state==='ended'?'beendet':requestedDay()===dayKey()?'heute später':'geplant',`activity-badge ${b.state==='busy'?'busy':'unknown'}`));
+  card.append(heading,eventRow(b,date));if(!b.lecturers.length)card.append(el('p','Kein Dozierendenname im veröffentlichten Plan.','activity-note'));
+  card.append(el('p',snapshotLabel(b.snapshot),'lookup-stamp'));results.append(card);
+ }
+ if(Object.values(datasets).some(d=>!d||d.unavailable))status.textContent+=' Ein Campus ist gerade nicht prüfbar; die Treffer sind unvollständig.';
+ if(Object.values(datasets).some(d=>d&&!d.includesLecturers))status.textContent+=' Ein Ersatzstand enthält keine Dozierendennamen; dort ist nur der Veranstaltungstitel durchsuchbar.';
+}
+function render(){results.replaceChildren();const needle=normalize(query.value);if(needle.length<2){status.textContent='Mindestens 2 Zeichen eingeben. Suche nach Raum oder nach Name / Veranstaltung in beiden Campussen.';return;}
+ if(lookupMode==='person'){renderPeople();return;}
  const available=new Map(registry.map(r=>[r.room,r]));for(const data of Object.values(datasets)){if(!data)continue;for(const id of [...(data.freeRooms||[]),...(data.bookings||[]).map(b=>b.room)])if(!available.has(id))available.set(id,{room:id});}
  const fullNumber=query.value.trim().split(/[.\s]+/).length>=3;
  const matches=[...available.values()].filter(r=>normalize(fullNumber?r.room:r.room.split('.').slice(2).join('.')).includes(needle)).sort((a,b)=>{const an=a.room.split('.').slice(2).join('.'),bn=b.room.split('.').slice(2).join('.');return Number(normalize(bn)===needle)-Number(normalize(an)===needle)||a.room.localeCompare(b.room,'de',{numeric:true});});
@@ -29,9 +49,19 @@ function render(){results.replaceChildren();const needle=normalize(query.value);
  }
  if(Object.values(datasets).some(d=>!d||d.unavailable))status.textContent+=' Ein Campus liefert derzeit keine verwertbaren Daten.';
 }
-async function search(){const id=++revision;if(normalize(query.value).length<2){results.replaceChildren();status.textContent='Mindestens 2 Zeichen eingeben. Die Suche umfasst beide Campusse.';return;}status.textContent='Raumbelegung beider Campusse wird geladen …';try{await load();if(id===revision)render();}catch(error){if(id===revision){results.replaceChildren();status.textContent=error.message;}}}
+async function search(){const id=++revision;if(normalize(query.value).length<2){results.replaceChildren();status.textContent='Mindestens 2 Zeichen eingeben. Suche nach Raum oder nach Name / Veranstaltung in beiden Campussen.';return;}status.textContent='Uni-Termine beider Campusse werden geladen …';try{await load();if(id===revision&&loadedDay!==requestedDay())await load();if(id===revision)render();}catch(error){if(id===revision){results.replaceChildren();status.textContent=error.message;}}}
 query.addEventListener('input',search);document.getElementById('refresh').addEventListener('click',()=>{loadedDay=null;datasets={};if(query.value.trim())search();});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){loadedDay=null;datasets={};if(query.value.trim())search();}});window.addEventListener('pageshow',e=>{if(e.persisted){loadedDay=null;datasets={};if(query.value.trim())search();}});
-setInterval(()=>{if(document.visibilityState==='visible'&&query.value.trim()){if(loadedDay!==dayKey()||Date.now()-loadedAt>=60000)search();else render();}},30000);
+setInterval(()=>{if(document.visibilityState==='visible'&&query.value.trim()){if(loadedDay!==requestedDay()||Date.now()-loadedAt>=60000)search();else render();}},30000);
 
 window.addEventListener('online',()=>{loadedDay=null;if(query.value.trim())search();});
+
+function syncLookup(){
+ dateBounds();document.getElementById('lookup-date-row').hidden=lookupMode!=='person';
+ document.querySelectorAll('[data-lookup-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lookupMode===lookupMode)));
+ document.getElementById('lookup-label').textContent=lookupMode==='person'?'Dozierende oder Veranstaltung suchen':'Raum in beiden Campussen suchen';
+ query.placeholder=lookupMode==='person'?'Nachname oder Veranstaltungstitel …':'z. B. S26, 0.14 oder 2.09.0.14';
+}
+document.querySelectorAll('[data-lookup-mode]').forEach(b=>b.addEventListener('click',()=>{lookupMode=b.dataset.lookupMode;loadedDay=null;syncLookup();search();}));
+lookupDay.addEventListener('change',()=>{loadedDay=null;search();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')dateBounds();});

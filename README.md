@@ -8,7 +8,7 @@ Die Seite fragt beim Öffnen, bei Rückkehr aus dem Hintergrund, bei wiederherge
 
 Falls der Live-Abruf ausfällt, wählt die Seite den neuesten gültigen Stand aus GitHub Pages, dem GitHub-Repository und einem lokal gespeicherten Tagesstand. Ersatzstände behalten ihre ursprüngliche Abrufzeit und sind sichtbar gekennzeichnet. Ein falsches Datum, ein falscher Campus oder ein leerer Katalog wird nicht als gültige Verfügbarkeit akzeptiert. Ohne passende Daten zeigt die App eine Störung. GitHub Actions erzeugt zusätzlich Ersatzstände für sieben Tage; der geplante Fünf-Minuten-Takt ist keine Garantie, die tatsächlichen Abstände können mehrere Stunden betragen.
 
-Quelle: dieselbe öffentliche RoomsAPI wie Mobile.UP. Veröffentlicht werden Raumbezeichnung, Beginn/Ende, öffentliche Veranstaltungstitel, PULS-Links und Abrufzeit. Separate Dozierendennamen, Zugangsdaten oder private Daten werden nicht übernommen. Unbelegt laut Raumplan bedeutet keine Buchung; Zugang ist vor Ort zu prüfen.
+Quelle: dieselbe öffentliche RoomsAPI wie Mobile.UP. Veröffentlicht werden Raumbezeichnung, Beginn/Ende, öffentliche Veranstaltungstitel, PULS-Links und Abrufzeit. Öffentlich im Uni-Plan genannte Dozierendennamen werden für die Namenssuche übernommen. Kontaktdaten, Zugangsdaten oder private Daten werden nicht übernommen. Unbelegt laut Raumplan bedeutet keine Buchung; Zugang ist vor Ort zu prüfen.
 
 GitHub Pages veröffentlicht die Seite über GitHub Actions; die Quelle liegt auf `main`. Datenaktualisierung unter **Actions → Raumdaten aktualisieren → Run workflow** manuell starten. GitHub deaktiviert geplante Workflows in öffentlichen Repositories nach längerer Inaktivität (aktuell 60 Tage); bei Bedarf unter Actions wieder aktivieren.
 
@@ -23,3 +23,5 @@ Mit **Wunschzeit** lassen sich Von/Bis-Uhrzeiten zum ausgewählten Datum angeben
 Die Oberfläche passt sich iPhone und Mac an: große Touch-Flächen und einklappbare Veranstaltungssuche auf kleinen Bildschirmen, getrennte Suchspalte ab 960 Pixeln. Bei Wunschzeit entfällt das Feld Mindestdauer, da der gesamte Zeitraum frei sein muss.
 
 Der Haus-Schnellfilter zeigt in Golm nur Räume aus 2.70 und in Griebnitzsee nur Seminar- und Hörsäle aus Haus 6. Während er aktiv ist, ersetzt er die Raumtyp-Checkboxen; beim Ausschalten gelten wieder die vorherigen Raumtyp-Filter. Die Einstellung wird je Campus gespeichert.
+
+Unter **Raum & Dozierende suchen → Name / Veranstaltung** lassen sich Nachnamen und Veranstaltungstitel in beiden Campussen suchen. Datum von heute bis sechs Tage im Voraus wählen. Treffer zeigen Raum, Campus, Uhrzeit und veröffentlichte Lehrperson; laufende und kommende Termine erscheinen zuerst. Alte Ersatzstände ohne Namen werden ausdrücklich gekennzeichnet.

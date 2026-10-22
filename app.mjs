@@ -1,6 +1,6 @@
-document.getElementById('room-lookup').open=window.matchMedia('(min-width: 960px)').matches;
-import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=9';
-import {analyze,dayKey,nextDay,clock,matchesCampusHouse} from './core.mjs?v=9';
+document.getElementById('room-lookup').open=true;
+import {loadSnapshot,snapshotLabel} from './data-client.mjs?v=10';
+import {analyze,dayKey,nextDay,clock,matchesCampusHouse} from './core.mjs?v=10';
 
 const $=id=>document.getElementById(id);
 function stored(key,fallback){try{return localStorage.getItem(key)??fallback;}catch{return fallback;}}
